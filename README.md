@@ -463,3 +463,26 @@ lote de paquetes y las rutas que depende de él quedan inconsistentes.
 —o con esa CDN bloqueada— la página se sirve igual con `200 OK`, pero no dibuja nada: es la
 desviación **D-14** de `docs/DESIGN.md` §19, aceptada porque el mapa es material de
 demostración autocontenido y no toca el dominio.
+
+## 11. Calidad de código e integración continua
+
+[![CI](https://github.com/ElvisEnc/ms-logistica-entrega-modulo6/actions/workflows/ci.yml/badge.svg)](https://github.com/ElvisEnc/ms-logistica-entrega-modulo6/actions/workflows/ci.yml)
+
+Regla del proyecto: **la indentación es con tabs** (`.editorconfig`), verificada con `dotnet format whitespace`.
+
+| Pieza | Archivo | Qué hace |
+|---|---|---|
+| `pre-commit` | `.husky/pre-commit` → `npx lint-staged` → `.lintstagedrc.mjs` | Formatea con `dotnet format whitespace` solo los `.cs` en stage |
+| `commit-msg` | `.husky/commit-msg` → commitlint | Exige Conventional Commits con scope: `tipo(scope): resumen` |
+| `pre-push` | `.husky/pre-push` → `npm run format:check` | Verifica todo el repo; si hay espacios, el push se cancela |
+| CI | `.github/workflows/ci.yml` | `dotnet format --verify-no-changes` → `dotnet restore` → `dotnet build --no-restore` → `dotnet test --no-build` (unitarias + cobertura) → SonarCloud |
+
+Instalación después de clonar (requiere Node.js 20+ y .NET SDK 10):
+
+```bash
+npm install                  # instala Husky + lint-staged + commitlint y activa los hooks
+git config core.hooksPath    # debe mostrar .husky/_
+npm run format:fix           # convierte espacios a tabs en todo el repo
+```
+
+**SonarCloud.** El workflow usa la organización `elvisenc` y el project key `ElvisEnc_ms-logistica-entrega-modulo6` (variables `SONAR_ORGANIZATION` y `SONAR_PROJECT_KEY` al inicio de `ci.yml`). Requiere el secret `SONAR_TOKEN` y **Automatic Analysis desactivado**. Mientras el secret no exista, los pasos de Sonar se omiten.
