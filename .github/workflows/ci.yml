@@ -1,0 +1,93 @@
+# Continuous integration for ms-logistica-entrega.
+# Runs on every push and on pull requests to main:
+#   1. Formatting check (same tab rule enforced by the Husky hooks)
+#   2. Restore, build (Release) and unit tests with coverage (coverlet, OpenCover)
+#   3. SonarCloud analysis (SonarScanner for .NET wraps build + tests)
+# The SonarCloud steps are skipped while the SONAR_TOKEN secret is not configured.
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  # Must match the organization and project key shown on sonarcloud.io exactly.
+  SONAR_ORGANIZATION: elvisenc
+  SONAR_PROJECT_KEY: ElvisEnc_ms-logistica-entrega-modulo6
+  SOLUTION: Logistica.slnx
+  UNIT_TEST_PROJECTS: tests/Logistica.Domain.Tests tests/Logistica.Application.Tests
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Format, build, test and SonarCloud
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # SonarCloud needs the full history (blame / new code)
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Format check (tabs)
+        run: dotnet format whitespace . --folder --verify-no-changes
+
+      - name: Restore dependencies
+        run: dotnet restore "$SOLUTION"
+
+      - name: Setup Java (SonarScanner)
+        if: env.SONAR_TOKEN != ''
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "21"
+
+      - name: Cache SonarCloud packages
+        if: env.SONAR_TOKEN != ''
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: SonarCloud begin
+        if: env.SONAR_TOKEN != ''
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          dotnet sonarscanner begin \
+            /k:"$SONAR_PROJECT_KEY" \
+            /o:"$SONAR_ORGANIZATION" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.token="$SONAR_TOKEN" \
+            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
+            /d:sonar.coverage.exclusions="**/*Tests*/**" \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/Migrations/**,**/TestResults/**,demo/**"
+
+      - name: Build
+        run: dotnet build "$SOLUTION" -c Release --no-restore
+
+      - name: Unit tests + coverage
+        run: |
+          for project in $UNIT_TEST_PROJECTS; do
+            dotnet test "$project" -c Release --no-build --verbosity normal \
+              --collect "XPlat Code Coverage;Format=opencover" \
+              --results-directory TestResults
+          done
+
+      - name: SonarCloud end
+        if: env.SONAR_TOKEN != ''
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
