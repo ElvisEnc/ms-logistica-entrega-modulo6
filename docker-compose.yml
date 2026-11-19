@@ -1,0 +1,60 @@
+# ms-logistica-entrega (BC6: Logística de Entrega) con su propia base PostgreSQL 16.
+# Requiere la infraestructura del grupo (Consul, RabbitMQ, API Gateway) en la red nurtricenter_net:
+#   cd ../../ms-api-gateway && docker compose up -d --build
+# Luego:  docker compose up -d --build
+# El sistema completo se levanta desde ms-api-gateway/docker-compose.sistema.yml.
+name: ms-logistica-entrega
+
+services:
+  logistica_db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: logistica_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${LOGISTICA_DB_PASSWORD:-postgres}
+    ports:
+      - "5436:5432"
+    volumes:
+      - logistica_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d logistica_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - nurtricenter_net
+
+  logistica_api:
+    build: .
+    image: nurtricenter/ms-logistica-entrega:2.0.0
+    restart: on-failure
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Postgres: Host=logistica_db;Port=5432;Database=logistica_db;Username=postgres;Password=${LOGISTICA_DB_PASSWORD:-postgres}
+      Database__MigrarAlArrancar: "true"
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+      Jwt__Secret: ${JWT_SECRET:-nurtricenter-secreto-compartido-2026}
+      ServiceDiscovery__ServiceDiscoveryAddress: http://consul:8500
+      ServiceDiscovery__Host: ""
+      ServiceDiscovery__Port: "8080"
+      ServiceDiscovery__ServiceId: ms-logistica
+    ports:
+      - "5060:8080"
+    volumes:
+      # Constancias (foto o firma) que suben los repartidores; se sirven en /evidencias.
+      - logistica_evidencias:/app/evidencias
+    depends_on:
+      logistica_db:
+        condition: service_healthy
+    networks:
+      - nurtricenter_net
+
+volumes:
+  logistica_postgres_data:
+  logistica_evidencias:
+
+networks:
+  nurtricenter_net:
+    external: true

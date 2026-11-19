@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Logistica.Application/Logistica.Application.csproj" />
+    <Project Path="src/Logistica.Domain/Logistica.Domain.csproj" />
+    <Project Path="src/Logistica.Infrastructure/Logistica.Infrastructure.csproj" />
+    <Project Path="src/Logistica.WebApi/Logistica.WebApi.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Logistica.Application.Tests/Logistica.Application.Tests.csproj" />
+    <Project Path="tests/Logistica.ContractTests/Logistica.ContractTests.csproj" />
+    <Project Path="tests/Logistica.Domain.Tests/Logistica.Domain.Tests.csproj" />
+    <Project Path="tests/Logistica.IntegrationTests/Logistica.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

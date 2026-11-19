@@ -1,0 +1,29 @@
+root = true
+
+[*]
+indent_style = tab
+tab_width = 4
+indent_size = tab
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+end_of_line = crlf
+charset = utf-8-bom
+
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_var_when_type_is_apparent = true:suggestion
+dotnet_style_require_accessibility_modifiers = always:warning
+dotnet_diagnostic.CS8618.severity = error   # non-nullable sin inicializar
+dotnet_diagnostic.CS1998.severity = warning # async sin await
+# Formatting violations (including space indentation) surface in the IDE
+# and are enforced by `dotnet format whitespace` in the git hooks.
+dotnet_diagnostic.IDE0055.severity = warning
+
+# YAML forbids tabs for indentation
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
