@@ -1,0 +1,17 @@
+{
+	"name": "ms-logistica-entrega-tooling",
+	"private": true,
+	"description": "Git hooks tooling (Husky + lint-staged + commitlint) for ms-logistica-entrega. The service itself is .NET.",
+	"type": "module",
+	"scripts": {
+		"prepare": "husky",
+		"format:check": "dotnet format whitespace . --folder --verify-no-changes",
+		"format:fix": "dotnet format whitespace . --folder"
+	},
+	"devDependencies": {
+		"@commitlint/cli": "^21.2.4",
+		"@commitlint/config-conventional": "^21.2.4",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.6.1"
+	}
+}
